@@ -67,10 +67,10 @@ export const isAtomicExp = (x: any): x is AtomicExp =>
     isNumExp(x) || isBoolExp(x) || isStrExp(x) ||
     isPrimOp(x) || isVarRef(x);
 
-export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp;
+export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp | Values | LetValues;
 export const isCompoundExp = (x: any): x is CompoundExp =>
-    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x) || isLetrecExp(x) || isSetExp(x);
-export const expComponents = (e: Exp): CExp[] =>
+    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x) || isLetrecExp(x) || isSetExp(x) || isValues(x) || isLetValues(x);
+export const expComponents = (e: Exp): CExp[] =>        //TODOOOOOOOOOOOOOOOOOOOOOOOOO
     isIfExp(e) ? [e.test, e.then, e.alt] :
     isProcExp(e) ? e.body :
     isLetExp(e) ? [...e.body, ...map((b) => b.val, e.bindings)] :
@@ -113,6 +113,32 @@ export const isVarRef = (x: any): x is VarRef => x.tag === "VarRef";
 export interface VarDecl {tag: "VarDecl"; var: string; texp: TExp}
 export const makeVarDecl = (v: string, te: TExp): VarDecl => ({tag: "VarDecl", var: v, texp: te});
 export const isVarDecl = (x: any): x is VarDecl => x.tag === "VarDecl";
+
+
+//Values addaptations
+export interface Values {tag: "Values"; tuple: CExp[];}
+export const makeValues = (tuple: CExp[]): Values =>
+    ({tag: "Values", tuple: tuple });
+export const isValues = (x: any): x is Values => x.tag === "Values" ;
+
+
+// export interface LetValues {tag: "LetValues"; vars: VarRef[]; bind: Values ; body: CExp[] }
+// export const makeLetValues = (vars: VarRef[], bind: Values, body: CExp[] ): LetValues =>
+//     ({tag: "LetValues", vars: vars, bind: bind, body: body});
+// export const isLetValues = (x: any): x is LetValues =>x.tag === "LetValues" ;
+
+export interface LetValues {tag: "LetValues"; bindings: BindingValues[] ; body: CExp[] }
+export const makeLetValues = (bindings: BindingValues[], body: CExp[] ): LetValues =>
+    ({tag: "LetValues", bindings: bindings, body: body});
+export const isLetValues = (x: any): x is LetValues =>x.tag === "LetValues" ;
+
+
+export interface BindingValues {tag: "BindingValues"; var: VarDecl[]; val: CExp; }
+export const makeBindingValues = (v: VarDecl[], val: CExp): BindingValues =>
+    ({tag: "BindingValues", var: v, val: val});
+export const isBindingValues = (x: any): x is BindingValues => x.tag === "BindingValues";
+
+//===============================================================================================//
 
 export interface AppExp {tag: "AppExp"; rator: CExp; rands: CExp[]; }
 export const makeAppExp = (rator: CExp, rands: CExp[]): AppExp =>
@@ -192,6 +218,8 @@ export const parseL5SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     op === "quote" ? parseLitExp(first(params)) :
     op === "letrec" ? parseLetrecExp(first(params), rest(params)) :
     op === "set!" ? parseSetExp(params) :
+    op === "values" ? parseValues(params) :
+    op === "let-values" ? parseLetValues()  :
     makeFailure("Never");
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
@@ -229,8 +257,10 @@ const isPrimitiveOp = (x: string): boolean =>
      "string=?", "cons", "car", "cdr", "pair?", "list?",
      "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
 
+
+//============== ADDED VALUES AND LET-VALUES =============================//     
 const isSpecialForm = (x: string): boolean =>
-    ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
+    ["if", "lambda", "let", "quote", "letrec", "set!","values","let-values"].includes(x);
 
 const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
@@ -262,6 +292,14 @@ const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> =>
     ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings)}`) :
     safe2((bdgs: Binding[], body: CExp[]) => makeOk(makeLetExp(bdgs, body)))
         (parseBindings(bindings), mapResult(parseL5CExp, body));
+
+
+//ADDED Parse Values and LetValues
+const parseValues = (vals : Sexp[]) : Result<Values> =>
+    bind(mapResult(parseL5CExp,vals), (cexps: CExp[]) => makeOk(makeValues(cexps)));
+
+const parseLetValues = () : Result<LetValues> =>
+    ;
 
 const isConcreteVarDecl = (sexp: Sexp): boolean =>
     isIdentifier(sexp) ||
@@ -353,6 +391,8 @@ export const unparse = (e: Parsed): Result<string> =>
     // DefineExp | Program
     isDefineExp(e) ? safe2((vd: string, val: string) => makeOk(`(define ${vd} ${val})`))
                         (unparseVarDecl(e.var), unparse(e.val)) :
+    isValues(e) ? unparseValues(e) :
+    isLetValues(e) ? unparseLetValues(e) :
     bind(mapResult(unparse, e.exps), (exps: string[]) => makeOk(`(L5 ${exps})`));
 
 const unparseReturn = (te: TExp): Result<string> =>
@@ -391,3 +431,18 @@ const unparseLetrecExp = (le: LetrecExp): Result<string> =>
 
 const unparseSetExp = (se: SetExp): Result<string> =>
     bind(unparse(se.val), (val: string) => makeOk(`(set! ${se.var.var} ${val})`));
+
+const unparseValues = (val: Values): Result<string> => 
+    bind(unparseLExps(val.tuple) ,(x : string) =>  makeOk(`(values ${x})`) );
+
+const unparseLetValues = (val: LetValues): Result<string> => 
+    safe2((bind: string, body: string) => makeOk(`(let-values (${bind}) ${body})`))
+    (unparseBindingValues(val.bindings),unparseLExps(val.body));
+
+
+//TOODOOOOOOOOOOOOOOOO handle mapResult for BindingValues[] instead of only first element
+const unparseBindingValues = (binds: BindingValues[]): Result<string> =>        
+    bind(mapResult(bdg => safe2((bind :string[], body: string ) => makeOk(`(${join(" ",bind)} ${body})`))
+        (mapResult(val  => unparseVarDecl(val)  ,bdg.var ), unparse(bdg.val)   ) ,binds ),
+        (bdgVals ) => makeOk(join(" ",bdgVals)) );
+    
