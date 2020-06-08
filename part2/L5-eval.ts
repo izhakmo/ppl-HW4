@@ -1,7 +1,7 @@
 // L5-eval-box
 
 import { map, repeat, zipWith } from "ramda";
-import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp } from './L5-ast';
+import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp, isValues, isLetValues, LetValues, Values } from './L5-ast';
 import { Binding, VarDecl } from "./L5-ast";
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "./L5-ast";
 import { parseL5Exp } from "./L5-ast";
@@ -30,6 +30,8 @@ export const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isLetExp(exp) ? evalLet(exp, env) :
     isLetrecExp(exp) ? evalLetrec(exp, env) :
     isSetExp(exp) ? evalSet(exp, env) :
+    isValues(exp) ? evalValues(exp, env) :
+    isLetValues(exp) ? evalLetValues(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult(rand => applicativeEval(rand, env), exp.rands)) :
     makeFailure(`Bad L5 AST ${exp}`);
@@ -91,6 +93,15 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vals = mapResult((v : CExp) => applicativeEval(v, env), map((b : Binding) => b.val, exp.bindings));
     const vars = map((b: Binding) => b.var.var, exp.bindings);
     return bind(vals, (vals: Value[]) => evalSequence(exp.body, makeExtEnv(vars, vals, env)));
+}
+
+
+const evalLetValues = (exp: LetValues, env: Env): Result<Value> => {
+
+}
+
+const evalValues = (exp: Values, env: Env): Result<Value> => {
+    
 }
 
 // LETREC: Direct evaluation rule without syntax expansion

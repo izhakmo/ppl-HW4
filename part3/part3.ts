@@ -1,6 +1,6 @@
 import { take } from "ramda";
 
-function* braid <T,S,R> (gen1 : Generator <T,S,R> ,gen2 : Generator<T,S,R> ) : Generator<T,void,R> {
+export function* braid <T,S,R> (gen1 : Generator <T,S,R> ,gen2 : Generator<T,S,R> ) : Generator<T,void,R> {
     //TODO so called while
     // yield gen1.next().value;
     // yield gen2.next().value;
@@ -19,7 +19,7 @@ function* braid <T,S,R> (gen1 : Generator <T,S,R> ,gen2 : Generator<T,S,R> ) : G
     }
 }
 
-function* biased <T,S,R> (gen1 : Generator <T,S,R> ,gen2 : Generator<T,S,R> ) : Generator<T,void,R> {
+export function* biased <T,S,R> (gen1 : Generator <T,S,R> ,gen2 : Generator<T,S,R> ) : Generator<T,void,R> {
     //TODO so called while
     // yield gen1.next().value;
     // yield gen2.next().value;
@@ -42,21 +42,21 @@ function* biased <T,S,R> (gen1 : Generator <T,S,R> ,gen2 : Generator<T,S,R> ) : 
     }
 }
 
-function* gen1() {
-    yield 3;
-    yield 6;
-    yield 9;
-    yield 12;
-}
+// function* gen1() {
+//     yield 3;
+//     yield 6;
+//     yield 9;
+//     yield 12;
+// }
 
-function* gen2() {
-    yield 8;
-    yield 10;
-}
-const gen = biased(gen1(),gen2());
-for(let i = 0; i < 4; i++){
-    console.log(gen.next().value);
-}
+// function* gen2() {
+//     yield 8;
+//     yield 10;
+// }
+// const gen = biased(gen1(),gen2());
+// for(let i = 0; i < 4; i++){
+//     console.log(gen.next().value);
+// }
 /*
 for (let n of take(4, braid(gen1,gen2))) {
     console.log(n);

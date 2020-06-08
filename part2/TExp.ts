@@ -162,15 +162,28 @@ export const parseTExp = (texp: Sexp): Result<TExp> =>
 ;; expected exactly one -> in the list
 ;; We do not accept (a -> b -> c) - must parenthesize
 */
-const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
+const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp | TupleTExp> => {
     const pos = texps.indexOf('->');
-    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${texps}`) :
+    return (pos === -1)  ? bind( bind(parseTupleTExp(texps), x => moshe(x)), y=> makeOk(makeNonEmptyTupleTExp(y) )) :
            (pos === 0) ? makeFailure(`No param types in proc texp - ${texps}`) :
            (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${texps}`) :
            (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${texps}`) :
-           safe2((args: TExp[], returnTE: TExp) => makeOk(makeProcTExp(args, returnTE)))
-                (parseTupleTExp(texps.slice(0, pos)), parseTExp(texps[pos + 1]));
+           (pos=== texps.length-2) ?    //proc
+           safe2((args: TExp[], returnTE: TExp) =>  (isEmptyTupleTExp (args))?   makeOk(makeProcTExp([], returnTE)) :
+               (isNonEmptyTupleTExp(args)) ? makeOk(makeProcTExp(args.TEs, returnTE)): makeOk(makeProcTExp(args,returnTE)))
+                (parseTupleTExp(texps.slice(0, pos)), parseTExp(texps[pos + 1]))    :   //tuple
+
+            safe2((args: TExp[], returnTE: NonTupleTExp[]) => (isEmptyTupleTExp (args))?   makeOk(makeProcTExp([],makeNonEmptyTupleTExp( returnTE))) :
+            (isNonEmptyTupleTExp(args)) ? makeOk(makeProcTExp(args.TEs, makeNonEmptyTupleTExp( returnTE))): makeOk(makeProcTExp(args,makeNonEmptyTupleTExp( returnTE))))
+                (parseTupleTExp(texps.slice(0, pos)), bind(parseTupleTExp(texps.slice(pos+1)), (exps) => moshe(exps)));   
 };
+
+
+
+
+const moshe = (texps: TExp[]) : Result<NonTupleTExp[]> =>
+    mapResult((x => isNonTupleTExp(x)? makeOk(x) : makeFailure("wrong type- not a nonTuple ") ),texps);
+
 
 /*
 ;; Expected structure: <te1> [* <te2> ... * <ten>]?
