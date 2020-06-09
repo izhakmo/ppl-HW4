@@ -80,41 +80,41 @@ describe('L4 Normal Eval', () => {
         expect(parseTE('((string -> (boolean * number)) -> (string -> (boolean * number)))'))
         .to.deep.equal(makeOk(makeProcTExp([makeProcTExp([makeStrTExp()], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))], makeProcTExp([makeStrTExp()], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()])))));
     })
-    // it('test evalParse 1', () => {
-    //     expect(evalParse("(let-values (((a b c) (values 1 2 3))) (+ a b c))"))
-    //     .to.deep.equal(makeOk(6));
-    // })
-    // it('test evalParse 2', () => {
-    //     expect(bind(parseL5("(L5 (define f (lambda (x) (values 1 2 3))) (let-values (((a b c) (f 0))) (+ a b c)))"), evalProgram))
-    //     .to.deep.equal(makeOk(6));
-    // })
-    // it('test evalParse 3', () => {
-    //     expect(evalParse("(let-values (((x y) (values 1 2)) ((a b c) (values 5 4 (+ 7 7)))) (* (+ y x) (+ c b y)))"))
-    //     .to.deep.equal(makeOk(60));
-    // })
-    // it('test evalParse 4', () => {
-    //     expect(evalParse("(let-values (((n s) (values 1 #t))) (if s 3 5))"))
-    //     .to.deep.equal(makeOk(3));
-    // })
-    // it('test evalParse 5', () => {
-    //     expect(evalParse(`
-    //     (let-values 
-    //         (
-    //             (
-    //                 (a) (values 1 2)
-    //             ) 
-    //             (
-    //                 (b c) 
-    //                 (values 3)
-    //             )
-    //         ) 
-    //         (+ a b c)
-    //     )`)).satisfy(isFailure);
-    // })
-    // it('test evalParse 6', () => {
-    //     expect(bind(parseL5("(L5 (define x 7) (let-values (((a b c) (values 1 2 3)) ((d e f) (values 4 5 6))) (+ x b c) (+ (let-values (((y t) (values 4 5))) (* t y x)) (+ f d e))))"), evalProgram))
-    //     .to.deep.equal(makeOk(155));
-    // })
+    it('test evalParse 1', () => {
+        expect(evalParse("(let-values (((a b c) (values 1 2 3))) (+ a b c))"))
+        .to.deep.equal(makeOk(6));
+    })
+    it('test evalParse 2', () => {
+        expect(bind(parseL5("(L5 (define f (lambda (x) (values 1 2 3))) (let-values (((a b c) (f 0))) (+ a b c)))"), evalProgram))
+        .to.deep.equal(makeOk(6));
+    })
+    it('test evalParse 3', () => {
+        expect(evalParse("(let-values (((x y) (values 1 2)) ((a b c) (values 5 4 (+ 7 7)))) (* (+ y x) (+ c b y)))"))
+        .to.deep.equal(makeOk(60));
+    })
+    it('test evalParse 4', () => {
+        expect(evalParse("(let-values (((n s) (values 1 #t))) (if s 3 5))"))
+        .to.deep.equal(makeOk(3));
+    })
+    it('test evalParse 5', () => {
+        expect(evalParse(`
+        (let-values 
+            (
+                (
+                    (a) (values 1 2)
+                ) 
+                (
+                    (b c) 
+                    (values 3)
+                )
+            ) 
+            (+ a b c)
+        )`)).satisfy(isFailure);
+    })
+    it('test evalParse 6', () => {
+        expect(bind(parseL5("(L5 (define x 7) (let-values (((a b c) (values 1 2 3)) ((d e f) (values 4 5 6))) (+ x b c) (+ (let-values (((y t) (values 4 5))) (* t y x)) (+ f d e))))"), evalProgram))
+        .to.deep.equal(makeOk(155));
+    })
     // it('test typeof 1', () => {
     //     expect(L5typeof(`(let-values ((((n : number) (s : number)) (values 1 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
     //         .to.deep.equal(makeOk(`number`));

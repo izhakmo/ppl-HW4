@@ -1,7 +1,7 @@
 // L5-eval-box
 
-import { map, repeat, zipWith } from "ramda";
-import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp, isValues, isLetValues, LetValues, Values } from './L5-ast';
+import { map, repeat, zipWith, flatten, values } from "ramda";
+import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp, isValues, isLetValues, LetValues, Values, BindingValues } from './L5-ast';
 import { Binding, VarDecl } from "./L5-ast";
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "./L5-ast";
 import { parseL5Exp } from "./L5-ast";
@@ -9,9 +9,9 @@ import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
          isProcExp, isSetExp } from "./L5-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, FBinding } from "./L5-env";
-import { isClosure, makeClosure, Closure, Value } from "./L5-value";
+import { isClosure, makeClosure, Closure, Value, SExpValue, makeSValues } from "./L5-value";
 import { isEmpty, first, rest } from '../shared/list';
-import { Result, makeOk, makeFailure, mapResult, safe2, bind } from "../shared/result";
+import { Result, makeOk, makeFailure, mapResult, safe2, bind, isOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { applyPrimitive } from "./evalPrimitive";
 
@@ -97,11 +97,34 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
 
 
 const evalLetValues = (exp: LetValues, env: Env): Result<Value> => {
+    // const bindingVals = map((b : BindingValues) => b.val , exp.bindings);
+    // const checker : Result<Values[]> = mapResult((x : CExp) => isValues(x) ? makeOk(x) : makeFailure("not Values") ,bindingVals);    //TODO check that its type
+    // const vals = mapResult((v : CExp) => applicativeEval(v,env), map((b : BindingValues) => b.val , exp.bindings))
 
+
+    const moshe = mapResult((x : BindingValues ) => BindValuesChecker(x) ,exp.bindings);
+
+    const mosheVals = isOk(moshe)? mapResult((v) => applicativeEval(v,env), flatten(map((x ) => map((y) => y ,x[1].tuple) , moshe.value))) : moshe;
+    isOk(mosheVals)? console.log(JSON.stringify(mosheVals.value)) : console.log(JSON.stringify(mosheVals));
+    const mosheVars = isOk(moshe)?  makeOk(map((b ) => b.var , flatten(map((x ) =>x[0] ,moshe.value)))) : moshe;
+    isOk(mosheVars)? console.log(JSON.stringify(mosheVars.value)) : console.log(JSON.stringify(mosheVars));
+
+    return safe2((vars :string[], vals :SExpValue[]) => evalSequence(exp.body,makeExtEnv(vars,vals,env)))
+        (mosheVars,mosheVals)
 }
 
-const evalValues = (exp: Values, env: Env): Result<Value> => {
-    
+const BindValuesChecker = (exp: BindingValues): Result<[VarDecl[],Values]> => 
+    isValues(exp.val)&& exp.val.tuple.length === exp.var.length ? makeOk([exp.var,exp.val]) : makeFailure("not values or wrong number of parameters");
+ 
+
+const evalValues = (exp: Values, env: Env): Result<Value> => {      
+    // const vals= mapResult((val => applicativeEval(val,env)),exp.tuple);
+    // return isOk(vals)? : vals;
+
+    // return evalSequence(exp.tuple,env);
+    const moshe = mapResult((x ) =>applicativeEval(x,env) ,exp.tuple);
+    // isOk(moshe)? console.log("mosheXXXXXXXXXXXX: "+JSON.stringify(moshe.value)) : console.log(JSON.stringify(moshe));
+    return bind(moshe,(x => makeOk(makeSValues(x))))
 }
 
 // LETREC: Direct evaluation rule without syntax expansion

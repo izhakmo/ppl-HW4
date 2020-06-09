@@ -1,7 +1,7 @@
 // ========================================================
 // Value type definition for L5
 
-import { append, join } from 'ramda';
+import { append, join, map } from 'ramda';
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L5-ast';
 import { Env } from './L5-env';
 import { isNumber, isArray, isString } from '../shared/type-predicates';
@@ -38,10 +38,20 @@ export interface SymbolSExp {
     val: string;
 }
 
-export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp | void;
+export interface SValues {
+    tag: "SValues";
+    vals: SExpValue[];
+}
+
+export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp | void | SValues;
+
+export const makeSValues = (vals : SExpValue[]): SValues =>
+    ({tag: "SValues", vals: vals});
+export const isSValues = (x: any): x is SValues => x.tag === "SValues";
+
 export const isSExp = (x: any): x is SExpValue =>
     typeof(x) === 'string' || typeof(x) === 'boolean' || typeof(x) === 'number' ||
-    isSymbolSExp(x) || isCompoundSExp(x) || isEmptySExp(x) || isPrimOp(x) || isClosure(x);
+    isSymbolSExp(x) || isCompoundSExp(x) || isEmptySExp(x) || isPrimOp(x) || isClosure(x) || isSValues(x);
 
 export const makeCompoundSExp = (val1: SExpValue, val2: SExpValue): CompoundSExp =>
     ({tag: "CompoundSexp", val1: val1, val2 : val2});
@@ -68,6 +78,11 @@ export const compoundSExpToString = (cs: CompoundSExp, css = compoundSExpToArray
     isArray(css) ? `(${join(' ', css)})` :
     `(${css.s1.join(' ')} . ${css.s2})`
 
+
+//added SValues
+export const SValuesToString = (val: SValues ) : string =>
+    `(values ${join(' ',map((x) => valueToString(x),val.vals) )})`;
+
 export const valueToString = (val: Value): string =>
     isNumber(val) ?  val.toString() :
     val === true ? '#t' :
@@ -78,4 +93,5 @@ export const valueToString = (val: Value): string =>
     isSymbolSExp(val) ? val.val :
     isEmptySExp(val) ? "'()" :
     isCompoundSExp(val) ? compoundSExpToString(val) :
+    isSValues(val) ? SValuesToString(val):
     "Error: unknown value type "+val 
