@@ -106,9 +106,9 @@ const evalLetValues = (exp: LetValues, env: Env): Result<Value> => {
 
     const mosheVals : Result<SExpValue[]> = isOk(moshe)? mapResult((v) => isCExp(v)?  applicativeEval(v,env) : isSExp(v)? makeOk(v) : makeFailure(`never gonna happand - eval L5  at evalLetValues`) ,
          flatten(map((x ) => map((y) => y ,isValues(x[1]) ? x[1].tuple : x[1]) , moshe.value))) : moshe;
-    isOk(mosheVals)? console.log(JSON.stringify(mosheVals.value)) : console.log(JSON.stringify(mosheVals));
+    isOk(mosheVals)? console.log(" MOSHEVALSSSSSS"+ JSON.stringify(mosheVals.value)) : console.log(JSON.stringify(mosheVals));
     const mosheVars = isOk(moshe)?  makeOk(map((b ) => b.var , flatten(map((x ) =>x[0] ,moshe.value)))) : moshe;
-    // isOk(mosheVars)? console.log(JSON.stringify(mosheVars.value)) : console.log(JSON.stringify(mosheVars));
+    isOk(mosheVars)? console.log(" mosheVars" +JSON.stringify(mosheVars.value)) : console.log(JSON.stringify(mosheVars));
 
     return safe2((vars :string[], vals :SExpValue[]) => evalSequence(exp.body,makeExtEnv(vars,vals,env)))
         (mosheVars,mosheVals)

@@ -255,7 +255,7 @@ export const parseL5CExp = (sexp: Sexp): Result<CExp> =>
 const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not", "eq?",
      "string=?", "cons", "car", "cdr", "pair?", "list?",
-     "number?", "boolean?", "symbol?", "string?", "display", "newline", ].includes(x);
+     "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
 
 
 //============== ADDED VALUES AND LET-VALUES =============================//     

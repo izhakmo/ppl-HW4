@@ -1,6 +1,6 @@
 // L5-typecheck
 // ========================================================
-import { equals, map, zipWith, chain, identity, reduce } from 'ramda';
+import { equals, map, zipWith, chain, identity, reduce, flatten, join } from 'ramda';
 import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNumExp,
          isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parseL5Exp, unparse,
          AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, NumExp,
@@ -168,29 +168,22 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): Result<TExp> => {
     return bind(constraints, _ => typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv)));
 };
 
-
-
 export const typeofLetValues = (exp: LetValues, tenv: TEnv): Result<TExp> => {
-    // const vars = map()
-    // const vals = map()
-    // const varTES = map()
-    // const constraints = zipWithResult()
-
-
-    // return bind(constraints, _ => typeofExps(exp.body,makeExtendTEnv(vars,varTES,tenv)));
-
-
-    const vars = chain(identity, map((b) => b.var, exp.bindings));
-    const vals = reduce((acc:CExp[], cur:CExp) => isAppExp(cur) && isPrimOp(cur.rator) && cur.rator.op === "values" ?
-         acc.concat(cur.rands) : acc.concat(cur),[],map((b) => b.val, exp.bindings));
-    const varTEs = map((b) => b.texp, vars);
-
+    const vars = flatten(map((x ) => x.var ,exp.bindings));
+    const valsBeforeCheck = map((x ) =>x.val ,exp.bindings);
+    if(!allT(isValues, valsBeforeCheck)) {
+        return makeFailure(`bindingValues has failed ; ${exp.bindings}`);
+    }
+    const vals = flatten(map((x ) => x.tuple, valsBeforeCheck))
+    const varTEs = map((x) => x.texp ,vars);
     const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv),
                                                            (typeOfVal: TExp) => checkEqualType(varTE, typeOfVal, exp)),
-                                                varTEs, vals);
-    return bind(constraints, _ => typeofExps(exp.body, makeExtendTEnv(map((b:VarDecl) => b.var ,vars), varTEs, tenv)));
-
+                                      varTEs, vals);
+    // console.log(vals[1])
+    // // console.log("varTEs" + JSON.stringify(varTEs));
+    return bind(constraints, _ => typeofExps(exp.body,makeExtendTEnv(map((x ) => x.var,vars), varTEs,tenv)));
 }
+
 
 // Purpose: compute the type of a letrec-exp
 // We make the same assumption as in L4 that letrec only binds proc values.

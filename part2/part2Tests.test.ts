@@ -6,84 +6,84 @@ import { parseTE, makeProcTExp, makeTVar, makeNonEmptyTupleTExp, makeBoolTExp, m
 import { evalParse, evalProgram } from './L5-eval';
 describe('L4 Normal Eval', () => {
 
-    it('evaluates simple values', () => {
-        expect(L5typeof(`(values 1 2)`)).to.deep.equal(makeOk(`(number * number)`));
-    })
-    it('evaluates empty lambda', () => {
-        expect(L5typeof(`(lambda () : (number * number) (values 1 2))`)).
-        to.deep.equal(makeOk(`(Empty -> (number * number))`));
-    })
-    it('evaluates lambda with params', () => {
-        expect(L5typeof(`(lambda ((x : string) (y : string)) : (number * number) (values 1 2))`))
-        .to.deep.equal(makeOk(`(string * string -> (number * number))`));
-    })
-    it('evaluates something', () => {
-        expect(L5typeof(`(define (x : number) 2)`)).to.deep.equal(makeOk(`void`));
-    })
+    // it('evaluates simple values', () => {
+    //     expect(L5typeof(`(values 1 2)`)).to.deep.equal(makeOk(`(number * number)`));
+    // })
+    // it('evaluates empty lambda', () => {
+    //     expect(L5typeof(`(lambda () : (number * number) (values 1 2))`)).
+    //     to.deep.equal(makeOk(`(Empty -> (number * number))`));
+    // })
+    // it('evaluates lambda with params', () => {
+    //     expect(L5typeof(`(lambda ((x : string) (y : string)) : (number * number) (values 1 2))`))
+    //     .to.deep.equal(makeOk(`(string * string -> (number * number))`));
+    // })
+    // it('evaluates something', () => {
+    //     expect(L5typeof(`(define (x : number) 2)`)).to.deep.equal(makeOk(`void`));
+    // })
     it('evaluates let-values', () => {
         expect(L5typeof(`(let-values ((((n : number) (s : number)) (values 1 2) : (number * number))) n)`))
         .to.deep.equal(makeOk(`number`));
     })
-    it('evaluates values(10 3)', () => {
-        expect(L5typeof(`(values 10 3)`))
-        .to.deep.equal(makeOk(`(number * number)`));
-    })
-    it('evaluates (values 10 (+ 1 2) (> 5 4) #f)', () => {
-        expect(L5typeof(`(values 10 (+ 1 2) (> 5 4) #f)`))
-        .to.deep.equal(makeOk(`(number * number * boolean * boolean)`));
-    })
-    // it('evaluates let-values with app in body', () => {
-    //     expect(L5typeof(`(let-values ((((x : number) (y : number)) (values 10 3))) (+ x y))`))
-    //     .to.deep.equal(makeOk(`number`));
+    // it('evaluates values(10 3)', () => {
+    //     expect(L5typeof(`(values 10 3)`))
+    //     .to.deep.equal(makeOk(`(number * number)`));
     // })
-    // it('evaluates let values with string', () => {
-    //     expect(L5typeof(`(let-values ((((n : number) (s : string)) (values 1 "string"))) s)`))
-    //     .to.deep.equal(makeOk(`string`));
-    // }) 
-    it('test pares 1', () => {
-        expect(bind(parseL5(`(L5 (define f (lambda (x) (values 1 2 3))))`), unparse))
-        .to.deep.equal(makeOk(`(L5 (define f (lambda (x) (values 1 2 3))))`));
+    // it('evaluates (values 10 (+ 1 2) (> 5 4) #f)', () => {
+    //     expect(L5typeof(`(values 10 (+ 1 2) (> 5 4) #f)`))
+    //     .to.deep.equal(makeOk(`(number * number * boolean * boolean)`));
+    // })
+    it('evaluates let-values with app in body', () => {
+        expect(L5typeof(`(let-values ((((x : number) (y : number)) (values 10 3))) (+ x y))`))
+        .to.deep.equal(makeOk(`number`));
     })
-    it('test pares 2', () => {
-        expect(bind(parseL5(`(L5 (let-values (((x y) (values 10 3)) ((a b) (values 5 2))) (list y x) (+ a b)))`), unparse))
-        .to.deep.equal(makeOk(`(L5 (let-values (((x y) (values 10 3)) ((a b) (values 5 2))) (list y x) (+ a b)))`));
-    })
-    it('test pares 3', () => {
-        expect(bind(parseL5(`(L5 (let-values (((a b c) (f 0))) (+ a b c)))`), unparse))
-        .to.deep.equal(makeOk(`(L5 (let-values (((a b c) (f 0))) (+ a b c)))`));
-    })
-    it('test pares 4', () => {
-        expect(bind(parseL5(`(L5 (let-values (((n s) (values 1 “string”))) n))`), unparse))
-        .to.deep.equal(makeOk(`(L5 (let-values (((n s) (values 1 “string”))) n))`));
-    })
-    it('test pares 5', () => {
-        expect(bind(parseL5(`(L5 (let-values (((n1 s) (values 1 “string”)) ((b n2 n3) (values #t (+ 1 1) 3))) (if b (+ n1 n2) s)))`), unparse))
-        .to.deep.equal(makeOk(`(L5 (let-values (((n1 s) (values 1 “string”)) ((b n2 n3) (values #t (+ 1 1) 3))) (if b (+ n1 n2) s)))`));
-    })
-    it('test parseTE 1', () => {
-        expect(parseTE('(T * T -> (boolean * number))'))
-        .to.deep.equal(makeOk(makeProcTExp([makeTVar('T'), makeTVar('T')], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))));
-    })
-    it('test parseTE 2', () => {
-        expect(parseTE('(T * T * boolean * number)'))
-        .to.deep.equal(makeOk(makeNonEmptyTupleTExp([makeTVar('T'), makeTVar('T'), makeBoolTExp(), makeNumTExp()])));
-    })
-    it('test parseTE 3', () => {
-        expect(parseTE('((number -> (string * boolean)) * T -> (boolean * number))'))
-        .to.deep.equal(makeOk(makeProcTExp([makeProcTExp([makeNumTExp()], makeNonEmptyTupleTExp([makeStrTExp(), makeBoolTExp()])), makeTVar('T')], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))));
-    })
-    it('test parseTE 4', () => {
-        expect(parseTE('((string * boolean) * (number * number) -> (boolean * number))'))
-        .to.deep.equal(makeOk(makeProcTExp([makeNonEmptyTupleTExp([makeStrTExp(), makeBoolTExp()]), makeNonEmptyTupleTExp([makeNumTExp(), makeNumTExp()])], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))));
-    })
-    it('test parseTE 5', () => {
-        expect(parseTE('((string -> (boolean * number)) -> (string -> (boolean * number)))'))
-        .to.deep.equal(makeOk(makeProcTExp([makeProcTExp([makeStrTExp()], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))], makeProcTExp([makeStrTExp()], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()])))));
-    })
-    it('test evalParse 1', () => {
-        expect(evalParse("(let-values (((a b c) (values 1 2 3))) (+ a b c))"))
-        .to.deep.equal(makeOk(6));
-    })
+    it('evaluates let values with string', () => {
+        expect(L5typeof(`(let-values ((((n : number) (s : string)) (values 1 "string"))) s)`))
+        .to.deep.equal(makeOk(`string`));
+    }) 
+    // it('test pares 1', () => {
+    //     expect(bind(parseL5(`(L5 (define f (lambda (x) (values 1 2 3))))`), unparse))
+    //     .to.deep.equal(makeOk(`(L5 (define f (lambda (x) (values 1 2 3))))`));
+    // })
+    // it('test pares 2', () => {
+    //     expect(bind(parseL5(`(L5 (let-values (((x y) (values 10 3)) ((a b) (values 5 2))) (list y x) (+ a b)))`), unparse))
+    //     .to.deep.equal(makeOk(`(L5 (let-values (((x y) (values 10 3)) ((a b) (values 5 2))) (list y x) (+ a b)))`));
+    // })
+    // it('test pares 3', () => {
+    //     expect(bind(parseL5(`(L5 (let-values (((a b c) (f 0))) (+ a b c)))`), unparse))
+    //     .to.deep.equal(makeOk(`(L5 (let-values (((a b c) (f 0))) (+ a b c)))`));
+    // })
+    // it('test pares 4', () => {
+    //     expect(bind(parseL5(`(L5 (let-values (((n s) (values 1 “string”))) n))`), unparse))
+    //     .to.deep.equal(makeOk(`(L5 (let-values (((n s) (values 1 “string”))) n))`));
+    // })
+    // it('test pares 5', () => {
+    //     expect(bind(parseL5(`(L5 (let-values (((n1 s) (values 1 “string”)) ((b n2 n3) (values #t (+ 1 1) 3))) (if b (+ n1 n2) s)))`), unparse))
+    //     .to.deep.equal(makeOk(`(L5 (let-values (((n1 s) (values 1 “string”)) ((b n2 n3) (values #t (+ 1 1) 3))) (if b (+ n1 n2) s)))`));
+    // })
+    // it('test parseTE 1', () => {
+    //     expect(parseTE('(T * T -> (boolean * number))'))
+    //     .to.deep.equal(makeOk(makeProcTExp([makeTVar('T'), makeTVar('T')], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))));
+    // })
+    // it('test parseTE 2', () => {
+    //     expect(parseTE('(T * T * boolean * number)'))
+    //     .to.deep.equal(makeOk(makeNonEmptyTupleTExp([makeTVar('T'), makeTVar('T'), makeBoolTExp(), makeNumTExp()])));
+    // })
+    // it('test parseTE 3', () => {
+    //     expect(parseTE('((number -> (string * boolean)) * T -> (boolean * number))'))
+    //     .to.deep.equal(makeOk(makeProcTExp([makeProcTExp([makeNumTExp()], makeNonEmptyTupleTExp([makeStrTExp(), makeBoolTExp()])), makeTVar('T')], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))));
+    // })
+    // it('test parseTE 4', () => {
+    //     expect(parseTE('((string * boolean) * (number * number) -> (boolean * number))'))
+    //     .to.deep.equal(makeOk(makeProcTExp([makeNonEmptyTupleTExp([makeStrTExp(), makeBoolTExp()]), makeNonEmptyTupleTExp([makeNumTExp(), makeNumTExp()])], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))));
+    // })
+    // it('test parseTE 5', () => {
+    //     expect(parseTE('((string -> (boolean * number)) -> (string -> (boolean * number)))'))
+    //     .to.deep.equal(makeOk(makeProcTExp([makeProcTExp([makeStrTExp()], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()]))], makeProcTExp([makeStrTExp()], makeNonEmptyTupleTExp([makeBoolTExp(), makeNumTExp()])))));
+    // })
+    // it('test evalParse 1', () => {
+    //     expect(evalParse("(let-values (((a b c) (values 1 2 3))) (+ a b c))"))
+    //     .to.deep.equal(makeOk(6));
+    // })
     it('test evalParse 2', () => {
         expect(bind(parseL5("(L5 (define f (lambda (x) (values 1 2 3))) (let-values (((a b c) (f 0))) (+ a b c)))"), evalProgram))
         .to.deep.equal(makeOk(6));
