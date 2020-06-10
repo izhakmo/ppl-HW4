@@ -1,16 +1,16 @@
 // L5-typecheck
 // ========================================================
-import { equals, map, zipWith } from 'ramda';
+import { equals, map, zipWith, chain, identity, reduce } from 'ramda';
 import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNumExp,
          isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parseL5Exp, unparse,
          AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, NumExp,
-         Parsed, PrimOp, ProcExp, Program, StrExp, isValues } from "./L5-ast";
+         Parsed, PrimOp, ProcExp, Program, StrExp, isValues, Values, isLetValues, LetValues, CExp, VarDecl } from "./L5-ast";
 import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
          parseTE, unparseTExp,
-         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
+         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp, makeNonEmptyTupleTExp, NonEmptyTupleTExp, isNonTupleTExp, NonTupleTExp } from "./TExp";
 import { isEmpty, allT, first, rest } from '../shared/list';
-import { Result, makeFailure, bind, makeOk, safe3, safe2, zipWithResult } from '../shared/result';
+import { Result, makeFailure, bind, makeOk, safe3, safe2, zipWithResult, mapResult, isOk } from '../shared/result';
 import { parse as p } from "../shared/parser";
 
 // Purpose: Check that type expressions are equivalent
@@ -48,7 +48,8 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
     isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
-    // isValues(exp) ? typeofValues(exp, tenv) :
+    isValues(exp) ? typeofValues(exp, tenv) :
+    isLetValues(exp) ? typeofLetValues(exp, tenv) : 
     // Skip isSetExp(exp) isLitExp(exp)
     makeFailure("Unknown type");
 
@@ -58,6 +59,18 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
 export const typeofExps = (exps: Exp[], tenv: TEnv): Result<TExp> =>
     isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
     bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv));
+
+
+export const typeofValues = (vals: Values,tenv : TEnv): Result<TExp> =>
+    bind(mapResult((x ) => typeofExp(x,tenv),vals.tuple), (x) =>isNonEmptyTExpArr(x) ?
+        makeOk(makeNonEmptyTupleTExp(x)) : makeFailure(`wrong types - L5- typyChecker on foo typeofValues`) );
+
+export const isNonEmptyTExpArr = (texps: TExp[]): texps is NonTupleTExp[] =>
+    isOk( mapResult((x) => tupleOrFailure(x),texps) )
+
+
+export const tupleOrFailure = (texp : TExp): Result<boolean> =>
+    isNonTupleTExp(texp) ? makeOk(true) : makeFailure(`texp type is ${texp.tag}`);
 
 // a number literal has type num-te
 export const typeofNum = (n: NumExp): NumTExp => makeNumTExp();
@@ -154,6 +167,30 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): Result<TExp> => {
                                       varTEs, vals);
     return bind(constraints, _ => typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv)));
 };
+
+
+
+export const typeofLetValues = (exp: LetValues, tenv: TEnv): Result<TExp> => {
+    // const vars = map()
+    // const vals = map()
+    // const varTES = map()
+    // const constraints = zipWithResult()
+
+
+    // return bind(constraints, _ => typeofExps(exp.body,makeExtendTEnv(vars,varTES,tenv)));
+
+
+    const vars = chain(identity, map((b) => b.var, exp.bindings));
+    const vals = reduce((acc:CExp[], cur:CExp) => isAppExp(cur) && isPrimOp(cur.rator) && cur.rator.op === "values" ?
+         acc.concat(cur.rands) : acc.concat(cur),[],map((b) => b.val, exp.bindings));
+    const varTEs = map((b) => b.texp, vars);
+
+    const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv),
+                                                           (typeOfVal: TExp) => checkEqualType(varTE, typeOfVal, exp)),
+                                                varTEs, vals);
+    return bind(constraints, _ => typeofExps(exp.body, makeExtendTEnv(map((b:VarDecl) => b.var ,vars), varTEs, tenv)));
+
+}
 
 // Purpose: compute the type of a letrec-exp
 // We make the same assumption as in L4 that letrec only binds proc values.

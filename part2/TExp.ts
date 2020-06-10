@@ -220,6 +220,7 @@ export const unparseTExp = (te: TExp): Result<string> => {
         isTVar(x) ? up(tvarContents(x)) :
         isProcTExp(x) ? safe2((paramTEs: string[], returnTE: string) => makeOk([...paramTEs, '->', returnTE]))
                             (unparseTuple(x.paramTEs), unparseTExp(x.returnTE)) :
+        isNonEmptyTupleTExp(x) ? unparseTuple(x.TEs) :
         makeFailure("Never");
     const unparsed = up(te);
     return bind(unparsed,

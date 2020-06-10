@@ -6,32 +6,32 @@ import { parseTE, makeProcTExp, makeTVar, makeNonEmptyTupleTExp, makeBoolTExp, m
 import { evalParse, evalProgram } from './L5-eval';
 describe('L4 Normal Eval', () => {
 
-    // it('evaluates simple values', () => {
-    //     expect(L5typeof(`(values 1 2)`)).to.deep.equal(makeOk(`(number * number)`));
-    // })
-    // it('evaluates empty lambda', () => {
-    //     expect(L5typeof(`(lambda () : (number * number) (values 1 2))`)).
-    //     to.deep.equal(makeOk(`(Empty -> (number * number))`));
-    // })
-    // it('evaluates lambda with params', () => {
-    //     expect(L5typeof(`(lambda ((x : string) (y : string)) : (number * number) (values 1 2))`))
-    //     .to.deep.equal(makeOk(`(string * string -> (number * number))`));
-    // })
-    // it('evaluates something', () => {
-    //     expect(L5typeof(`(define (x : number) 2)`)).to.deep.equal(makeOk(`void`));
-    // })
-    // it('evaluates let-values', () => {
-    //     expect(L5typeof(`(let-values ((((n : number) (s : number)) (values 1 2) : (number * number))) n)`))
-    //     .to.deep.equal(makeOk(`number`));
-    // })
-    // it('evaluates values(10 3)', () => {
-    //     expect(L5typeof(`(values 10 3)`))
-    //     .to.deep.equal(makeOk(`(number * number)`));
-    // })
-    // it('evaluates (values 10 (+ 1 2) (> 5 4) #f)', () => {
-    //     expect(L5typeof(`(values 10 (+ 1 2) (> 5 4) #f)`))
-    //     .to.deep.equal(makeOk(`(number * number * boolean * boolean)`));
-    // })
+    it('evaluates simple values', () => {
+        expect(L5typeof(`(values 1 2)`)).to.deep.equal(makeOk(`(number * number)`));
+    })
+    it('evaluates empty lambda', () => {
+        expect(L5typeof(`(lambda () : (number * number) (values 1 2))`)).
+        to.deep.equal(makeOk(`(Empty -> (number * number))`));
+    })
+    it('evaluates lambda with params', () => {
+        expect(L5typeof(`(lambda ((x : string) (y : string)) : (number * number) (values 1 2))`))
+        .to.deep.equal(makeOk(`(string * string -> (number * number))`));
+    })
+    it('evaluates something', () => {
+        expect(L5typeof(`(define (x : number) 2)`)).to.deep.equal(makeOk(`void`));
+    })
+    it('evaluates let-values', () => {
+        expect(L5typeof(`(let-values ((((n : number) (s : number)) (values 1 2) : (number * number))) n)`))
+        .to.deep.equal(makeOk(`number`));
+    })
+    it('evaluates values(10 3)', () => {
+        expect(L5typeof(`(values 10 3)`))
+        .to.deep.equal(makeOk(`(number * number)`));
+    })
+    it('evaluates (values 10 (+ 1 2) (> 5 4) #f)', () => {
+        expect(L5typeof(`(values 10 (+ 1 2) (> 5 4) #f)`))
+        .to.deep.equal(makeOk(`(number * number * boolean * boolean)`));
+    })
     // it('evaluates let-values with app in body', () => {
     //     expect(L5typeof(`(let-values ((((x : number) (y : number)) (values 10 3))) (+ x y))`))
     //     .to.deep.equal(makeOk(`number`));
@@ -115,22 +115,22 @@ describe('L4 Normal Eval', () => {
         expect(bind(parseL5("(L5 (define x 7) (let-values (((a b c) (values 1 2 3)) ((d e f) (values 4 5 6))) (+ x b c) (+ (let-values (((y t) (values 4 5))) (* t y x)) (+ f d e))))"), evalProgram))
         .to.deep.equal(makeOk(155));
     })
-    // it('test typeof 1', () => {
-    //     expect(L5typeof(`(let-values ((((n : number) (s : number)) (values 1 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
-    //         .to.deep.equal(makeOk(`number`));
-    // })
-    // it('mismatch types 1', () => {
-    //     expect(L5typeof(`(let-values ((((n : boolean) (s : number)) (values 1 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
-    //         .to.satisfy(isFailure);
-    // })
-    // it('mismatch types 2', () => {
-    //     expect(L5typeof(`(let-values ((((n : boolean) (s : number)) (values #t 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
-    //         .to.satisfy(isFailure);
-    // })
-    // it('mismatch types 3', () => {
-    //     expect(L5typeof(`(let-values ((((n : number) (s : number)) (values #t 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
-    //         .to.satisfy(isFailure);
-    // })
+    it('test typeof 1', () => {
+        expect(L5typeof(`(let-values ((((n : number) (s : number)) (values 1 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
+            .to.deep.equal(makeOk(`number`));
+    })
+    it('mismatch types 1', () => {
+        expect(L5typeof(`(let-values ((((n : boolean) (s : number)) (values 1 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
+            .to.satisfy(isFailure);
+    })
+    it('mismatch types 2', () => {
+        expect(L5typeof(`(let-values ((((n : boolean) (s : number)) (values #t 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
+            .to.satisfy(isFailure);
+    })
+    it('mismatch types 3', () => {
+        expect(L5typeof(`(let-values ((((n : number) (s : number)) (values #t 2) : (number * number)) (((a : boolean) (t : number)) (values #t 3) : (boolean * number))) (if a (* n t) (* s t)))`))
+            .to.satisfy(isFailure);
+    })
 });
 
 

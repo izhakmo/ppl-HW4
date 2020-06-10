@@ -214,12 +214,12 @@ export const parseL5SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     isEmpty(params) ? makeFailure("Empty args for special form") :
     op === "if" ? parseIfExp(params) :
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
+    op === "let-values" ? parseLetValues(first(params),rest(params)) :
     op === "let" ? parseLetExp(first(params), rest(params)) :
     op === "quote" ? parseLitExp(first(params)) :
     op === "letrec" ? parseLetrecExp(first(params), rest(params)) :
     op === "set!" ? parseSetExp(params) :
     op === "values" ? parseValues(params) :
-    op === "let-values" ? parseLetValues(first(params),rest(params)) :
     makeFailure("Never");
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
@@ -255,11 +255,11 @@ export const parseL5CExp = (sexp: Sexp): Result<CExp> =>
 const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not", "eq?",
      "string=?", "cons", "car", "cdr", "pair?", "list?",
-     "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
+     "number?", "boolean?", "symbol?", "string?", "display", "newline", ].includes(x);
 
 
 //============== ADDED VALUES AND LET-VALUES =============================//     
-const isSpecialForm = (x: string): boolean =>
+export const isSpecialForm = (x: string): boolean =>
     ["if", "lambda", "let", "quote", "letrec", "set!","values","let-values"].includes(x);
 
 const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
@@ -300,7 +300,7 @@ const parseValues = (vals : Sexp[]) : Result<Values> =>
 
 const parseLetValues = (binding : Sexp, body : Sexp[]) : Result<LetValues> =>
     isEmpty(body) ? makeFailure('Body of "letValues" cannot be empty'):
-    ! isGoodBindingValues(binding) ? makeFailure(`Invalid bindings: ${JSON.stringify(binding)}`) :
+    ! isGoodBindingValues(binding) ? makeFailure(`Invalid LetValues bindings: ${JSON.stringify(binding)}`) :
     safe2((bindings : BindingValues[], body : CExp[]) => makeOk(makeLetValues(bindings,body)))
         (mapResult(parseBindingValues,binding ), mapResult(parseL5CExp,body)) ;
 
@@ -313,7 +313,8 @@ const parseBindingValues = (bind : [Sexp[],Sexp]): Result<BindingValues> =>
     //     (mapResult(parseVarDecl, map(b => b[0], bindings)), mapResult(parseL5CExp, map(b => b[1], bindings)));
 
 const isGoodBindingValues = (bindings: Sexp): bindings is [Sexp[], Sexp][] =>
-isArray(bindings) && allT(isArray, bindings) && allT(isArray,bindings[0]);
+isArray(bindings) && allT(isArray, bindings) ;
+// && allT(isArray,bindings[0])
 
 const isConcreteVarDecl = (sexp: Sexp): boolean =>
     isIdentifier(sexp) ||

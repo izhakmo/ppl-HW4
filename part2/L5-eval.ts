@@ -9,7 +9,7 @@ import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
          isProcExp, isSetExp } from "./L5-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, FBinding } from "./L5-env";
-import { isClosure, makeClosure, Closure, Value, SExpValue, makeSValues } from "./L5-value";
+import { isClosure, makeClosure, Closure, Value, SExpValue, makeSValues, isSValues, SValues, isSExp } from "./L5-value";
 import { isEmpty, first, rest } from '../shared/list';
 import { Result, makeOk, makeFailure, mapResult, safe2, bind, isOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
@@ -102,20 +102,32 @@ const evalLetValues = (exp: LetValues, env: Env): Result<Value> => {
     // const vals = mapResult((v : CExp) => applicativeEval(v,env), map((b : BindingValues) => b.val , exp.bindings))
 
 
-    const moshe = mapResult((x : BindingValues ) => BindValuesChecker(x) ,exp.bindings);
+    const moshe = mapResult((x : BindingValues ) => valuesOrApp(x,env) ,exp.bindings);
 
-    const mosheVals = isOk(moshe)? mapResult((v) => applicativeEval(v,env), flatten(map((x ) => map((y) => y ,x[1].tuple) , moshe.value))) : moshe;
+    const mosheVals : Result<SExpValue[]> = isOk(moshe)? mapResult((v) => isCExp(v)?  applicativeEval(v,env) : isSExp(v)? makeOk(v) : makeFailure(`never gonna happand - eval L5  at evalLetValues`) ,
+         flatten(map((x ) => map((y) => y ,isValues(x[1]) ? x[1].tuple : x[1]) , moshe.value))) : moshe;
     isOk(mosheVals)? console.log(JSON.stringify(mosheVals.value)) : console.log(JSON.stringify(mosheVals));
     const mosheVars = isOk(moshe)?  makeOk(map((b ) => b.var , flatten(map((x ) =>x[0] ,moshe.value)))) : moshe;
-    isOk(mosheVars)? console.log(JSON.stringify(mosheVars.value)) : console.log(JSON.stringify(mosheVars));
+    // isOk(mosheVars)? console.log(JSON.stringify(mosheVars.value)) : console.log(JSON.stringify(mosheVars));
 
     return safe2((vars :string[], vals :SExpValue[]) => evalSequence(exp.body,makeExtEnv(vars,vals,env)))
         (mosheVars,mosheVals)
 }
 
-const BindValuesChecker = (exp: BindingValues): Result<[VarDecl[],Values]> => 
+const valuesOrApp = (x : BindingValues,env : Env): Result<[VarDecl[],Value] | [VarDecl[],Values]> =>
+    isValues(x.val) ? BindValuesChecker(x, env) : LetValuesWithApp(x,env);
+
+const LetValuesWithApp = (exp: BindingValues,env: Env): Result<[VarDecl[],SValues]> =>{
+    const evalApp :Result<SExpValue> = isAppExp(exp.val) ? applicativeEval(exp.val,env) : makeFailure(`not an app nither a values`);
+    return isOk(evalApp) ?( isSValues(evalApp.value) ? makeOk([exp.var,evalApp.value]) : makeFailure(`not an app nither a values`)) :
+    makeFailure(`not an app nither a values`);
+}
+
+const BindValuesChecker = (exp: BindingValues, env: Env): Result<[VarDecl[],Values]> => 
+    // const ValOfBind =  isAppExp(exp.val) ? applicativeEval(exp.val, env) : makeOk(exp.val);
+
     isValues(exp.val)&& exp.val.tuple.length === exp.var.length ? makeOk([exp.var,exp.val]) : makeFailure("not values or wrong number of parameters");
- 
+
 
 const evalValues = (exp: Values, env: Env): Result<Value> => {      
     // const vals= mapResult((val => applicativeEval(val,env)),exp.tuple);
