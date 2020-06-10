@@ -1,5 +1,5 @@
 import { PrimOp } from "./L5-ast";
-import { Value, isSymbolSExp, isCompoundSExp, makeCompoundSExp, makeEmptySExp, isEmptySExp, CompoundSExp, EmptySExp, makeSValues } from "./L5-value";
+import { Value, isSymbolSExp, isCompoundSExp, makeCompoundSExp, makeEmptySExp, isEmptySExp, CompoundSExp, EmptySExp } from "./L5-value";
 import { Result, makeFailure, makeOk } from "../shared/result";
 import { allT, first, rest } from "../shared/list";
 import { isNumber, isString, isBoolean } from "../shared/type-predicates";

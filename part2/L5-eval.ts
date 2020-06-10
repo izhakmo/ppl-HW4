@@ -1,7 +1,7 @@
 // L5-eval-box
 
 import { map, repeat, zipWith, flatten, values } from "ramda";
-import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp, isValues, isLetValues, LetValues, Values, BindingValues } from './L5-ast';
+import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp, isValuesExp, isLetValuesExp, LetValues, Values, BindingValues } from './L5-ast';
 import { Binding, VarDecl } from "./L5-ast";
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "./L5-ast";
 import { parseL5Exp } from "./L5-ast";
@@ -9,7 +9,7 @@ import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
          isProcExp, isSetExp } from "./L5-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, FBinding } from "./L5-env";
-import { isClosure, makeClosure, Closure, Value, SExpValue, makeSValues, isSValues, SValues, isSExp } from "./L5-value";
+import { isClosure, makeClosure, Closure, Value, SExpValue, makeTuple, isSValues, SValues, isSExp } from "./L5-value";
 import { isEmpty, first, rest } from '../shared/list';
 import { Result, makeOk, makeFailure, mapResult, safe2, bind, isOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
@@ -30,8 +30,8 @@ export const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isLetExp(exp) ? evalLet(exp, env) :
     isLetrecExp(exp) ? evalLetrec(exp, env) :
     isSetExp(exp) ? evalSet(exp, env) :
-    isValues(exp) ? evalValues(exp, env) :
-    isLetValues(exp) ? evalLetValues(exp, env) :
+    isValuesExp(exp) ? evalValues(exp, env) :
+    isLetValuesExp(exp) ? evalLetValues(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult(rand => applicativeEval(rand, env), exp.rands)) :
     makeFailure(`Bad L5 AST ${exp}`);
@@ -98,14 +98,14 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
 
 const evalLetValues = (exp: LetValues, env: Env): Result<Value> => {
     // const bindingVals = map((b : BindingValues) => b.val , exp.bindings);
-    // const checker : Result<Values[]> = mapResult((x : CExp) => isValues(x) ? makeOk(x) : makeFailure("not Values") ,bindingVals);    //TODO check that its type
+    // const checker : Result<Values[]> = mapResult((x : CExp) => isValuesExp(x) ? makeOk(x) : makeFailure("not Values") ,bindingVals);    //TODO check that its type
     // const vals = mapResult((v : CExp) => applicativeEval(v,env), map((b : BindingValues) => b.val , exp.bindings))
 
 
     const moshe = mapResult((x : BindingValues ) => valuesOrApp(x,env) ,exp.bindings);
 
     const mosheVals : Result<SExpValue[]> = isOk(moshe)? mapResult((v) => isCExp(v)?  applicativeEval(v,env) : isSExp(v)? makeOk(v) : makeFailure(`never gonna happand - eval L5  at evalLetValues`) ,
-         flatten(map((x ) => map((y) => y ,isValues(x[1]) ? x[1].tuple : x[1]) , moshe.value))) : moshe;
+         flatten(map((x ) => map((y) => y ,isValuesExp(x[1]) ? x[1].tuple : x[1]) , moshe.value))) : moshe;
     isOk(mosheVals)? console.log(" MOSHEVALSSSSSS"+ JSON.stringify(mosheVals.value)) : console.log(JSON.stringify(mosheVals));
     const mosheVars = isOk(moshe)?  makeOk(map((b ) => b.var , flatten(map((x ) =>x[0] ,moshe.value)))) : moshe;
     isOk(mosheVars)? console.log(" mosheVars" +JSON.stringify(mosheVars.value)) : console.log(JSON.stringify(mosheVars));
@@ -115,7 +115,7 @@ const evalLetValues = (exp: LetValues, env: Env): Result<Value> => {
 }
 
 const valuesOrApp = (x : BindingValues,env : Env): Result<[VarDecl[],Value] | [VarDecl[],Values]> =>
-    isValues(x.val) ? BindValuesChecker(x, env) : LetValuesWithApp(x,env);
+    isValuesExp(x.val) ? BindValuesChecker(x, env) : LetValuesWithApp(x,env);
 
 const LetValuesWithApp = (exp: BindingValues,env: Env): Result<[VarDecl[],SValues]> =>{
     const evalApp :Result<SExpValue> = isAppExp(exp.val) ? applicativeEval(exp.val,env) : makeFailure(`not an app nither a values`);
@@ -126,7 +126,7 @@ const LetValuesWithApp = (exp: BindingValues,env: Env): Result<[VarDecl[],SValue
 const BindValuesChecker = (exp: BindingValues, env: Env): Result<[VarDecl[],Values]> => 
     // const ValOfBind =  isAppExp(exp.val) ? applicativeEval(exp.val, env) : makeOk(exp.val);
 
-    isValues(exp.val)&& exp.val.tuple.length === exp.var.length ? makeOk([exp.var,exp.val]) : makeFailure("not values or wrong number of parameters");
+    isValuesExp(exp.val)&& exp.val.tuple.length === exp.var.length ? makeOk([exp.var,exp.val]) : makeFailure("not values or wrong number of parameters");
 
 
 const evalValues = (exp: Values, env: Env): Result<Value> => {      
@@ -136,7 +136,7 @@ const evalValues = (exp: Values, env: Env): Result<Value> => {
     // return evalSequence(exp.tuple,env);
     const moshe = mapResult((x ) =>applicativeEval(x,env) ,exp.tuple);
     // isOk(moshe)? console.log("mosheXXXXXXXXXXXX: "+JSON.stringify(moshe.value)) : console.log(JSON.stringify(moshe));
-    return bind(moshe,(x => makeOk(makeSValues(x))))
+    return bind(moshe,(x => makeOk(makeTuple(x))))
 }
 
 // LETREC: Direct evaluation rule without syntax expansion

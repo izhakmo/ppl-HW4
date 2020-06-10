@@ -69,7 +69,7 @@ export const isAtomicExp = (x: any): x is AtomicExp =>
 
 export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp | Values | LetValues;
 export const isCompoundExp = (x: any): x is CompoundExp =>
-    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x) || isLetrecExp(x) || isSetExp(x) || isValues(x) || isLetValues(x);
+    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x) || isLetrecExp(x) || isSetExp(x) || isValuesExp(x) || isLetValuesExp (x);
 export const expComponents = (e: Exp): CExp[] =>        //TODOOOOOOOOOOOOOOOOOOOOOOOOO
     isIfExp(e) ? [e.test, e.then, e.alt] :
     isProcExp(e) ? e.body :
@@ -119,7 +119,7 @@ export const isVarDecl = (x: any): x is VarDecl => x.tag === "VarDecl";
 export interface Values {tag: "Values"; tuple: CExp[];}
 export const makeValues = (tuple: CExp[]): Values =>
     ({tag: "Values", tuple: tuple });
-export const isValues = (x: any): x is Values => x.tag === "Values" ;
+export const isValuesExp = (x: any): x is Values => x.tag === "Values" ;
 
 
 // export interface LetValues {tag: "LetValues"; vars: VarRef[]; bind: Values ; body: CExp[] }
@@ -130,7 +130,7 @@ export const isValues = (x: any): x is Values => x.tag === "Values" ;
 export interface LetValues {tag: "LetValues"; bindings: BindingValues[] ; body: CExp[] }
 export const makeLetValues = (bindings: BindingValues[], body: CExp[] ): LetValues =>
     ({tag: "LetValues", bindings: bindings, body: body});
-export const isLetValues = (x: any): x is LetValues =>x.tag === "LetValues" ;
+export const isLetValuesExp = (x: any): x is LetValues =>x.tag === "LetValues" ;
 
 
 export interface BindingValues {tag: "BindingValues"; var: VarDecl[]; val: CExp; }
@@ -406,8 +406,8 @@ export const unparse = (e: Parsed): Result<string> =>
     // DefineExp | Program
     isDefineExp(e) ? safe2((vd: string, val: string) => makeOk(`(define ${vd} ${val})`))
                         (unparseVarDecl(e.var), unparse(e.val)) :
-    isValues(e) ? unparseValues(e) :
-    isLetValues(e) ? unparseLetValues(e) :
+    isValuesExp(e) ? unparseValues(e) :
+    isLetValuesExp (e) ? unparseLetValues(e) :
     bind(mapResult(unparse, e.exps), (exps: string[]) => makeOk(`(L5 ${exps})`));
 
 const unparseReturn = (te: TExp): Result<string> =>

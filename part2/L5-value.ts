@@ -45,7 +45,7 @@ export interface SValues {
 
 export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp | void | SValues;
 
-export const makeSValues = (vals : SExpValue[]): SValues =>
+export const makeTuple = (vals : SExpValue[]): SValues =>
     ({tag: "SValues", vals: vals});
 export const isSValues = (x: any): x is SValues => x.tag === "SValues";
 

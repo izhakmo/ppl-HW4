@@ -1,10 +1,10 @@
 // L5-typecheck
 // ========================================================
-import { equals, map, zipWith, chain, identity, reduce, flatten, join } from 'ramda';
+import { equals, map, zipWith,flatten, join } from 'ramda';
 import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNumExp,
          isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parseL5Exp, unparse,
          AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, NumExp,
-         Parsed, PrimOp, ProcExp, Program, StrExp, isValues, Values, isLetValues, LetValues, CExp, VarDecl } from "./L5-ast";
+         Parsed, PrimOp, ProcExp, Program, StrExp, isValuesExp, Values, isLetValuesExp , LetValues, CExp, VarDecl } from "./L5-ast";
 import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
          parseTE, unparseTExp,
@@ -48,8 +48,8 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
     isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
-    isValues(exp) ? typeofValues(exp, tenv) :
-    isLetValues(exp) ? typeofLetValues(exp, tenv) : 
+    isValuesExp(exp) ? typeofValues(exp, tenv) :
+    isLetValuesExp (exp) ? typeofLetValues(exp, tenv) : 
     // Skip isSetExp(exp) isLitExp(exp)
     makeFailure("Unknown type");
 
@@ -171,7 +171,7 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): Result<TExp> => {
 export const typeofLetValues = (exp: LetValues, tenv: TEnv): Result<TExp> => {
     const vars = flatten(map((x ) => x.var ,exp.bindings));
     const valsBeforeCheck = map((x ) =>x.val ,exp.bindings);
-    if(!allT(isValues, valsBeforeCheck)) {
+    if(!allT(isValuesExp, valsBeforeCheck)) {
         return makeFailure(`bindingValues has failed ; ${exp.bindings}`);
     }
     const vals = flatten(map((x ) => x.tuple, valsBeforeCheck))
